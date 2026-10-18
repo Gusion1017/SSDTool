@@ -1,0 +1,19 @@
+# Build / publish output
+bin/
+obj/
+publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.publishsettings
+
+# Rider / JetBrains
+.idea/
+
+# OS junk
+Thumbs.db
+Desktop.ini
