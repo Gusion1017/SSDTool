@@ -1,0 +1,75 @@
+<UserControl x:Class="DiskMonitor.HistoryDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:oxy="http://oxyplot.org/wpf">
+    <Grid Margin="12,0,12,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 会话概要 + 删除 -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="SummaryText" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/>
+            <Button x:Name="DeleteButton" Grid.Column="1" Content="删除此记录" Padding="8,3" Margin="8,0,0,0"
+                    VerticalAlignment="Top" Click="DeleteButton_Click"/>
+        </Grid>
+
+        <!-- 读取分布 -->
+        <TextBlock Grid.Row="1" x:Name="ReadHeader" Text="读取分布" FontWeight="Bold" Margin="0,10,0,4"/>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <oxy:PlotView x:Name="ReadPieView" Background="{DynamicResource AppBackground}"/>
+            <DataGrid Grid.Column="1" x:Name="ReadDetailList" Margin="8,0,0,0" BorderThickness="1"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                      HeadersVisibility="Column" RowHeaderWidth="0" SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      RowStyle="{StaticResource PieRowStyle}" CellStyle="{StaticResource PieCellStyle}"
+                      Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource ControlForeground}"
+                      BorderBrush="{DynamicResource BorderColor}"
+                      HorizontalGridLinesBrush="{DynamicResource BorderColor}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="进程" Width="1.6*" Binding="{Binding Name}"/>
+                    <DataGridTextColumn Header="字节" Width="1*" Binding="{Binding BytesText}"/>
+                    <DataGridTextColumn Header="占比" Width="0.7*" Binding="{Binding PercentText}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- 写入分布 -->
+        <TextBlock Grid.Row="3" x:Name="WriteHeader" Text="写入分布" FontWeight="Bold" Margin="0,10,0,4"/>
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <oxy:PlotView x:Name="WritePieView" Background="{DynamicResource AppBackground}"/>
+            <DataGrid Grid.Column="1" x:Name="WriteDetailList" Margin="8,0,0,0" BorderThickness="1"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                      HeadersVisibility="Column" RowHeaderWidth="0" SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      RowStyle="{StaticResource PieRowStyle}" CellStyle="{StaticResource PieCellStyle}"
+                      Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource ControlForeground}"
+                      BorderBrush="{DynamicResource BorderColor}"
+                      HorizontalGridLinesBrush="{DynamicResource BorderColor}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="进程" Width="1.6*" Binding="{Binding Name}"/>
+                    <DataGridTextColumn Header="字节" Width="1*" Binding="{Binding BytesText}"/>
+                    <DataGridTextColumn Header="占比" Width="0.7*" Binding="{Binding PercentText}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Grid>
+</UserControl>

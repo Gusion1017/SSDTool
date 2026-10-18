@@ -1,0 +1,204 @@
+<Window x:Class="DiskMonitor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        xmlns:local="clr-namespace:DiskMonitor"
+        Title="磁盘 I/O 监控器 (ETW)"
+        Height="820" Width="1320"
+        Background="{DynamicResource AppBackground}"
+        Foreground="{DynamicResource AppForeground}"
+        WindowStartupLocation="CenterScreen"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2.1*"/>
+            <RowDefinition Height="2.1*"/>
+            <RowDefinition Height="1.3*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 工具栏 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button x:Name="StartButton" Content="▶ 开始记录" Padding="12,6" Margin="0,0,8,0"
+                    FontWeight="Bold" Click="StartButton_Click"/>
+            <Button x:Name="StopButton" Content="■ 停止记录" Padding="12,6" Margin="0,0,8,0"
+                    IsEnabled="False" Click="StopButton_Click"/>
+            <Button x:Name="ResetButton" Content="↺ 重置统计" Padding="12,6" Margin="0,0,12,0"
+                    Click="ResetButton_Click"/>
+            <Button x:Name="SystemDetailButton" Content="System 细分" Padding="10,6" Margin="0,0,12,0"
+                    IsEnabled="False" Click="SystemDetailButton_Click"/>
+            <TextBlock x:Name="StatusText" Text="○ 已停止" VerticalAlignment="Center"
+                       FontSize="15" FontWeight="Bold" Foreground="Gray"/>
+            <TextBlock x:Name="RecordTimeText" Text="" VerticalAlignment="Center" Margin="14,0,0,0"
+                       FontSize="14" FontWeight="SemiBold" Foreground="DodgerBlue"/>
+            <TextBlock x:Name="UnitLabel" Text="单位：" VerticalAlignment="Center" Margin="18,0,4,0"/>
+            <ComboBox x:Name="UnitCombo" Width="72" VerticalAlignment="Center"
+                      SelectionChanged="UnitCombo_SelectionChanged">
+                <ComboBoxItem Content="自动"/>
+                <ComboBoxItem Content="B"/>
+                <ComboBoxItem Content="KB"/>
+                <ComboBoxItem Content="MB"/>
+                <ComboBoxItem Content="GB"/>
+            </ComboBox>
+            <TextBlock x:Name="LangLabel" Text="语言：" VerticalAlignment="Center" Margin="12,0,4,0"/>
+            <ComboBox x:Name="LangCombo" Width="88" VerticalAlignment="Center"
+                      SelectionChanged="LangCombo_SelectionChanged">
+                <ComboBoxItem Content="中文"/>
+                <ComboBoxItem Content="English"/>
+            </ComboBox>
+            <TextBlock x:Name="ThemeLabel" Text="主题：" VerticalAlignment="Center" Margin="12,0,4,0"/>
+            <ComboBox x:Name="ThemeCombo" Width="72" VerticalAlignment="Center"
+                      SelectionChanged="ThemeCombo_SelectionChanged">
+                <ComboBoxItem x:Name="ThemeLightItem" Content="白天"/>
+                <ComboBoxItem x:Name="ThemeDarkItem" Content="夜间"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- 汇总 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,6">
+            <TextBlock x:Name="TotalReadLabel" Text="累计读取：" FontWeight="SemiBold"/>
+            <TextBlock x:Name="TotalReadText" Text="0 B" Margin="0,0,16,0" Foreground="DodgerBlue"/>
+            <TextBlock x:Name="TotalWriteLabel" Text="累计写入：" FontWeight="SemiBold"/>
+            <TextBlock x:Name="TotalWriteText" Text="0 B" Margin="0,0,16,0" Foreground="OrangeRed"/>
+            <TextBlock x:Name="RateReadLabel" Text="当前速率（读）：" FontWeight="SemiBold"/>
+            <TextBlock x:Name="RateReadText" Text="0 B/s" Margin="0,0,16,0" Foreground="DodgerBlue"/>
+            <TextBlock x:Name="RateWriteLabel" Text="当前速率（写）：" FontWeight="SemiBold"/>
+            <TextBlock x:Name="RateWriteText" Text="0 B/s" Foreground="OrangeRed"/>
+        </StackPanel>
+
+        <!-- 波形图（左）+ 累计折线图（右） -->
+        <Grid Grid.Row="2" Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <oxy:PlotView Grid.Column="0" x:Name="WavePlotView" Margin="0,0,6,0" Background="{DynamicResource AppBackground}"/>
+            <oxy:PlotView Grid.Column="1" x:Name="LinePlotView" Margin="6,0,0,0" Background="{DynamicResource AppBackground}"/>
+        </Grid>
+
+        <!-- 饼图 ×2，各自右侧带列表（全部进程） -->
+        <Grid Grid.Row="3" Margin="0,4,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 读取分布 -->
+            <Grid Grid.Column="0" Margin="0,0,6,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+                <oxy:PlotView x:Name="PieReadPlotView" Background="{DynamicResource AppBackground}"/>
+                <DataGrid Grid.Column="1" x:Name="ReadList" Margin="6,0,0,0"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                          HeadersVisibility="Column" RowHeaderWidth="0" SelectionMode="Single"
+                          GridLinesVisibility="Horizontal" BorderThickness="1"
+                          MouseDoubleClick="ProcessList_MouseDoubleClick"
+                          RowStyle="{StaticResource PieRowStyle}" CellStyle="{StaticResource PieCellStyle}"
+                          Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource ControlForeground}"
+                          BorderBrush="{DynamicResource BorderColor}"
+                          HorizontalGridLinesBrush="{DynamicResource BorderColor}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="进程" Width="1.4*" Binding="{Binding Name}"/>
+                        <DataGridTextColumn Header="字节" Width="1*" Binding="{Binding BytesText}"/>
+                        <DataGridTextColumn Header="占比" Width="0.6*" Binding="{Binding PercentText}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 写入分布 -->
+            <Grid Grid.Column="1" Margin="6,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+                <oxy:PlotView x:Name="PieWritePlotView" Background="{DynamicResource AppBackground}"/>
+                <DataGrid Grid.Column="1" x:Name="WriteList" Margin="6,0,0,0"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                          HeadersVisibility="Column" RowHeaderWidth="0" SelectionMode="Single"
+                          GridLinesVisibility="Horizontal" BorderThickness="1"
+                          MouseDoubleClick="ProcessList_MouseDoubleClick"
+                          RowStyle="{StaticResource PieRowStyle}" CellStyle="{StaticResource PieCellStyle}"
+                          Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource ControlForeground}"
+                          BorderBrush="{DynamicResource BorderColor}"
+                          HorizontalGridLinesBrush="{DynamicResource BorderColor}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="进程" Width="1.4*" Binding="{Binding Name}"/>
+                        <DataGridTextColumn Header="字节" Width="1*" Binding="{Binding BytesText}"/>
+                        <DataGridTextColumn Header="占比" Width="0.6*" Binding="{Binding PercentText}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Grid>
+
+        <!-- 历史记录（点击后在右侧栏查看详情，不弹新窗口） -->
+        <Grid Grid.Row="4" Margin="0,6,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock x:Name="HistoryHeaderText" Text="历史记录（点击在右侧查看详情）"
+                           FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button x:Name="ClearHistoryButton" Content="清空全部" Padding="10,3" Margin="12,0,0,0"
+                        Click="ClearHistoryButton_Click"/>
+            </StackPanel>
+            <DataGrid Grid.Row="1" x:Name="HistoryList" BorderThickness="1"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserResizeRows="False"
+                      HeadersVisibility="Column" RowHeaderWidth="0" SelectionMode="Single"
+                      GridLinesVisibility="Horizontal"
+                      Background="{DynamicResource ControlBackground}" Foreground="{DynamicResource ControlForeground}"
+                      RowBackground="{DynamicResource ControlBackground}"
+                      BorderBrush="{DynamicResource BorderColor}"
+                      HorizontalGridLinesBrush="{DynamicResource BorderColor}"
+                      PreviewMouseLeftButtonUp="HistoryList_PreviewMouseLeftButtonUp">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="开始时间" Width="1.5*" Binding="{Binding StartText}"/>
+                    <DataGridTextColumn Header="时长" Width="0.7*" Binding="{Binding DurationText}"/>
+                    <DataGridTextColumn Header="读取" Width="1*" Binding="{Binding ReadText}"/>
+                    <DataGridTextColumn Header="写入" Width="1*" Binding="{Binding WriteText}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <!-- 右侧栏：悬浮在左侧界面之上，历史记录详情 / System 细分都在这里展示。
+             覆盖式展开，不改变左侧图表的尺寸与布局；点右上角 ✕ 收起。 -->
+        <Border Grid.Row="1" Grid.RowSpan="4" x:Name="SidebarPanel"
+                Width="500" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                Visibility="Collapsed" Panel.ZIndex="10"
+                BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
+                Background="{DynamicResource ControlBackground}">
+            <Border.Effect>
+                <DropShadowEffect Direction="180" ShadowDepth="6" BlurRadius="18" Opacity="0.32" Color="#000000"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="12,8,8,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="SidebarTitleText" Text="详情" FontSize="14" FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    <Button x:Name="SidebarCloseButton" Grid.Column="1" Content="✕" Padding="7,1"
+                            FontSize="12" Click="SidebarCloseButton_Click" ToolTip="关闭侧栏"/>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <local:HistoryDetailView x:Name="HistoryDetailSidebar" Visibility="Collapsed"/>
+                    <local:SystemDetailView x:Name="SystemDetailSidebar" Visibility="Collapsed"/>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
