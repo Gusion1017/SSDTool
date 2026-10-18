@@ -1,5 +1,7 @@
 # DiskMonitor（SSDTool）— 低开销磁盘读写监控器
 
+**简体中文** | [English](./README.en.md)
+
 [![build](https://github.com/Gusion1017/SSDTool/actions/workflows/build.yml/badge.svg)](https://github.com/Gusion1017/SSDTool/actions/workflows/build.yml)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
