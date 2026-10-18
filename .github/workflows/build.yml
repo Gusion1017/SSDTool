@@ -25,8 +25,9 @@ jobs:
       - name: Build
         run: dotnet build src/DiskMonitor.csproj -c Release --no-restore
 
+      # win-x64 的运行时包只在带 RID 的 restore 中解析，因此这一步不能加 --no-restore
       - name: Publish (self-contained win-x64)
-        run: dotnet publish src/DiskMonitor.csproj -c Release -r win-x64 --self-contained true -o publish --no-restore
+        run: dotnet publish src/DiskMonitor.csproj -c Release -r win-x64 --self-contained true -o publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
